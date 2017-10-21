@@ -45,6 +45,11 @@ public class Unit {
 	}
 	
 	public int[] getNextMoveToHome() {
-		return pathToHome.remove(0);
+		if (pathToHome.size() > 0) {
+			return pathToHome.remove(0);
+		} else { 
+			int[] tmp = {-1,-1};
+			return tmp;
+		}
 	}
 }

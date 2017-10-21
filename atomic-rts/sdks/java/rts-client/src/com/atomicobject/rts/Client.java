@@ -165,7 +165,7 @@ public class Client {;
         List<AStarNode> closedList = new ArrayList<AStarNode>();
         
         AStarNode destNode = nodes.get(map[goalX][goalY]);
-        AStarNode current = nodes.get(map[(int) unit.x + width][(int) unit.y + height]);
+        AStarNode current = nodes.get(map[(int) (unit.x + BASE_X)][(int) (unit.y + BASE_Y)]);
         current.parent = null;
         current.setGValue(0);
         openList.add(current);
@@ -289,6 +289,11 @@ public class Client {;
 		    if (unit.type.equals("worker") && unit.status.equals("idle")) {
 		    	commands.add(assignWorkToWorker(unit));
 		    }
+		    JSONObject identify = new JSONObject();
+		    identify.put("command", "IDENTIFY");
+		    identify.put("unit", unit.id);
+		    identify.put("name", unit.id);
+		    commands.add(identify);
 		}		
 		
 		String[] directions = {"N","E","S","W"};
@@ -312,11 +317,21 @@ public class Client {;
 				
 		// If we have gathered something, send home
 		if (unit.resource > 0) {
+			System.out.println("ID = " + unit.id + " Resource = " + unit.resource + " Heading home!");
 			command = "MOVE";
+			
+			// Only calculate the path home once, then keep popping off next move
 			if (unit.pathToHome == null) {
 				unit.setPathToHome(this.aStar(unit, (int) BASE_X, (int) BASE_Y));
 			}
 			int[] nextMove = unit.getNextMoveToHome();
+			
+			// If we got back -1,-1 then we already dropped it off, explore
+			if (nextMove[0] == -1 && nextMove[1] == -1) {
+				dir = findNextInvisibleCell(unit);
+			}
+			
+			// Convert coordinates to direction
 			if (nextMove[0] < unit.x && nextMove[1] == unit.y) {
 				dir = "W";
 			} else if (nextMove[0] > unit.x && nextMove[1] == unit.y) {
@@ -334,7 +349,7 @@ public class Client {;
 			if (resourceDir != null) {
 				command = "GATHER";
 				dir = resourceDir;
-				System.out.println("Gathering from " + dir);
+				System.out.println("ID = " + unit.id + " Gathering from " + dir);
 			} else {
 				command = "MOVE";
 				dir = findNextInvisibleCell(unit);
@@ -361,10 +376,10 @@ public class Client {;
 		//String dir = "";
 		
 		if (map[x][y+1].getResource() != null) {
-			return "N";
+			return "S";
 			//values.put("N", map[x][y+1].getResource().value);
 		} else if (map[x][y-1].getResource() != null) {
-			return "S";
+			return "N";
 			//values.put("S", map[x][y-1].getResource().value);
 		} else if (map[x+1][y].getResource() != null) {
 			return "E";
