@@ -16,8 +16,8 @@ import org.json.simple.JSONValue;
 
 public class Client {;
 	
-	private final int BASE_X = 29;
-	private final int BASE_Y = 29;
+	private final long BASE_X = 29L;
+	private final long BASE_Y = 29L;
 	
 	BufferedReader input;
 	OutputStreamWriter out;
@@ -90,19 +90,20 @@ public class Client {;
 		for (JSONObject tile : tileUpdates) {
 			boolean visible = (Boolean) tile.get("visible");
 			boolean blocked = (Boolean) tile.get("blocked");
-			int x = BASE_X + ((Integer) tile.get("x"));
-			int y = BASE_Y + (Integer) tile.get("y");
+			long x = BASE_X + (Long) tile.get("x");
+			long y = BASE_Y + (Long) tile.get("y");
 			System.out.println(x + ", " + y);
 
-			map[x][y].setVisible(visible);
-			map[x][y].setBlocked(blocked);
+			map[(int) x][(int) y] = new GameTile();
+			map[(int) x][(int) y].setVisible(visible);
+			map[(int) x][(int) y].setBlocked(blocked);
 			JSONObject resources = (JSONObject) tile.get("resources");
 			if (resources != null) {
 				String type = (String) resources.get("type");
-				int total = (Integer) resources.get("total");
-				int value = (Integer) resources.get("value");
+				long total = (Long) resources.get("total");
+				long value = (Long) resources.get("value");
 				TileResource tileResource = new TileResource(type, total, value);
-				map[x][y].setResource(tileResource);
+				map[(int)x][(int)y].setResource(tileResource);
 			}
 			
 		}
@@ -148,7 +149,7 @@ public class Client {;
 	private void sendCommandListToServer(JSONArray commands) throws IOException {
 		JSONObject container = new JSONObject();
 		container.put("commands", commands);
-		//System.out.println("Sending commands: " + container.toJSONString());
+		System.out.println("Sending commands: " + container.toJSONString());
 		out.write(container.toJSONString());
 		out.write("\n");
 		out.flush();

@@ -2,29 +2,29 @@ package com.atomicobject.rts;
 
 public class TileResource {
 	String type;
-	int total;
-	int value;
+	long total;
+	long value;
 	
-	public TileResource(String type, int total, int value) {
+	public TileResource(String type, long total, long value) {
 		this.type = type;
 		this.total = total;
 		this.value = value;
 	}
 
 
-	public int getTotal() {
+	public long getTotal() {
 		return total;
 	}
 
-	public void setTotal(int total) {
+	public void setTotal(long total) {
 		this.total = total;
 	}
 
-	public int getValue() {
+	public long getValue() {
 		return value;
 	}
 
-	public void setValue(int value) {
+	public void setValue(long value) {
 		this.value = value;
 	}
 
