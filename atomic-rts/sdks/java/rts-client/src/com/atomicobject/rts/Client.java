@@ -137,6 +137,126 @@ public class Client {;
 		}
 	}
 	
+	private ArrayList<int[]> aStar(Unit unit, int goalX, int goalY) {
+		int width = map.length();
+		int height = map[0].length();
+		
+		Map<GameTile, AStarNode> nodes = new HashMap<GameTile, AStarNode>();
+		Comparator fComparator = new Comparator<AStarNode>() {
+			public int compare(AStarNode a, AStarNode b) {
+				return Integer.compare(a.getFValue(), b.getFValue());
+			}
+		}
+		
+		for(int i = 0; i < width; i++) {
+			for(int j = 0; j < height; j++) {
+				nodes.put(map[i][j], new AStarNode(i, j));
+				if(map[i][j].blocked) {
+					nodes.get(map[i][j]).isWall = true;
+				}
+			}
+		}
+		
+		List<AStarNode> openList = new ArrayList<AStarNode>();
+        List<AStarNode> closedList = new ArrayList<AStarNode>();
+        
+        AStarNode destNode = nodes.get(map[goalX][goalY]);
+        AStarNode current = nodes.get(map[(int) unit.x][(int) unit.y]);
+        current.parent = null;
+        current.setGValue(0);
+        openList.add(current);
+        
+        while(!openList.isEmpty()) {
+        	Collections.sort(openList, fComparator);
+        	current = openList.get(0);
+        	
+        	if(current.x == destNode.x && current.y == destNode.y) {
+        		//Calculate Path
+        		ArrayList<int[]> path = new ArrayList<int[]>();
+        		AStarNode node = destNode;
+        		while(node.parent != null) {
+        			int[] xy = {node.x, node.y};
+        			path.add(xy);
+        			node = node.parent;
+        		}
+        		return path;
+        	}
+        	
+        	//Remove from open, add to closed
+        	openList.remove(current);
+        	closedList.add(current);
+        	
+        	if(current.x + 1 < width) {  //Check east node
+        		AStarNode adjNode = nodes.get(map[current.x + 1][current.y]);
+        		
+        		if(!adjNode.isWall && !closedList.contains(adjNode)) {
+    				if(!openList.contains(adjNode)) {
+    					adjNode.parent = current;
+    					adjNode.calculateGValue(current);
+    					adjNode.calculateHValue(destNode);
+    					openList.add(adjNode);
+    				} else {
+    					if(adjNode.gValue < current.gValue) {
+    						adjNode.calculateGValue(current);
+    						current = adjNode;
+    					}
+    				}
+        		}
+        	}
+        	if(current.x - 1 > 0) {  //Check west node
+        		AStarNode adjNode = nodes.get(map[current.x - 1][current.y]);
+        		
+        		if(!adjNode.isWall && !closedList.contains(adjNode)) {
+    				if(!openList.contains(adjNode)) {
+    					adjNode.parent = current;
+    					adjNode.calculateGValue(current);
+    					adjNode.calculateHValue(destNode);
+    					openList.add(adjNode);
+    				} else {
+    					if(adjNode.gValue < current.gValue) {
+    						adjNode.calculateGValue(current);
+    						current = adjNode;
+    					}
+    				}
+        		}
+        	}
+        	if(current.y + 1 < height) {  //Check south node
+        		AStarNode adjNode = nodes.get(map[current.x][current.y + 1]);
+        		
+        		if(!adjNode.isWall && !closedList.contains(adjNode)) {
+    				if(!openList.contains(adjNode)) {
+    					adjNode.parent = current;
+    					adjNode.calculateGValue(current);
+    					adjNode.calculateHValue(destNode);
+    					openList.add(adjNode);
+    				} else {
+    					if(adjNode.gValue < current.gValue) {
+    						adjNode.calculateGValue(current);
+    						current = adjNode;
+    					}
+    				}
+        		}
+        	}
+        	if(current.y - 1 > 0) {  //Check north node
+        		AStarNode adjNode = nodes.get(map[current.x][current.y - 1]);
+        		
+        		if(!adjNode.isWall && !closedList.contains(adjNode)) {
+    				if(!openList.contains(adjNode)) {
+    					adjNode.parent = current;
+    					adjNode.calculateGValue(current);
+    					adjNode.calculateHValue(destNode);
+    					openList.add(adjNode);
+    				} else {
+    					if(adjNode.gValue < current.gValue) {
+    						adjNode.calculateGValue(current);
+    						current = adjNode;
+    					}
+    				}
+        		}
+        	}
+        }
+	}
+	
 
 	private void addUnitUpdate(Collection<JSONObject> unitUpdates) {
 		unitUpdates.forEach((unitUpdate) -> {
