@@ -5,9 +5,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -138,15 +142,15 @@ public class Client {;
 	}
 	
 	private ArrayList<int[]> aStar(Unit unit, int goalX, int goalY) {
-		int width = map.length();
-		int height = map[0].length();
+		int width = map.length;
+		int height = map[0].length;
 		
 		Map<GameTile, AStarNode> nodes = new HashMap<GameTile, AStarNode>();
 		Comparator fComparator = new Comparator<AStarNode>() {
 			public int compare(AStarNode a, AStarNode b) {
 				return Integer.compare(a.getFValue(), b.getFValue());
 			}
-		}
+		};
 		
 		for(int i = 0; i < width; i++) {
 			for(int j = 0; j < height; j++) {
@@ -255,6 +259,7 @@ public class Client {;
         		}
         	}
         }
+        return null;
 	}
 	
 

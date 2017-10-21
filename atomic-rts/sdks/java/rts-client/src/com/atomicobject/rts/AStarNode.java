@@ -5,7 +5,7 @@ public class AStarNode {
 	
 	public int gValue;
 	public int hValue;
-	public int isWall = false;
+	public boolean isWall = false;
 	
 	public AStarNode(int x, int y) {
 		this.x = x;

@@ -13,8 +13,8 @@ public class Unit {
 	Long attackCooldown;
 	Boolean canAttack;
 	Long playerId;
-	Long x;
-	Long y;
+	long x;
+	long y;
 	Long id;
 	String status;
 	Long attackCooldownDuration;
