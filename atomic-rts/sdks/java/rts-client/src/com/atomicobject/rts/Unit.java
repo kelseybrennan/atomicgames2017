@@ -21,6 +21,7 @@ public class Unit {
 	String status;
 	Long attackCooldownDuration;
 	ArrayList<int[]> pathToHome;
+	int[] nextDest;
 
 	public Unit(JSONObject json) {
 		resource = (Long) json.get("resource");
@@ -39,17 +40,26 @@ public class Unit {
 		status = (String) json.get("status");
 		attackCooldownDuration = (Long) json.get("attack_cooldown_duration");
 	}
-	
+
 	public void setPathToHome(ArrayList<int[]> pathToHome) {
 		this.pathToHome = pathToHome;
+		if (pathToHome != null) {
+			for (int[] move : pathToHome) {
+				System.out.println(move[0] + ", " + move[1]);
+			}
+		}
 	}
-	
+
 	public int[] getNextMoveToHome() {
 		if (pathToHome.size() > 0) {
-			return pathToHome.remove(0);
+			return pathToHome.remove(pathToHome.size()-1);
 		} else { 
 			int[] tmp = {-1,-1};
 			return tmp;
 		}
+	}
+	
+	public void setNextDest(int[] next) {
+		this.nextDest = next;
 	}
 }

@@ -190,7 +190,7 @@ public class Client {;
         	openList.remove(current);
         	closedList.add(current);
         	
-        	if(current.x + 1 < width) {  //Check east node
+        	if(current.x + 1 < width) {  // Check east node
         		AStarNode adjNode = nodes.get(map[current.x + 1][current.y]);
         		
         		if(!adjNode.isWall && !closedList.contains(adjNode)) {
@@ -329,18 +329,23 @@ public class Client {;
 			// If we got back -1,-1 then we already dropped it off, explore
 			if (nextMove[0] == -1 && nextMove[1] == -1) {
 				dir = findNextInvisibleCell(unit);
+				unit.setPathToHome(null);
 			}
 			
 			// Convert coordinates to direction
-			if (nextMove[0] < unit.x && nextMove[1] == unit.y) {
+			if (nextMove[0] < unit.x+BASE_X && nextMove[1] == unit.y+BASE_Y) {
 				dir = "W";
-			} else if (nextMove[0] > unit.x && nextMove[1] == unit.y) {
+			} else if (nextMove[0] > unit.x+BASE_X && nextMove[1] == unit.y+BASE_Y) {
 				dir = "E";
-			} else if (nextMove[0] == unit.x && nextMove[1] < unit.y) {
+			} else if (nextMove[0] == unit.x+BASE_X && nextMove[1] < unit.y+BASE_Y) {
 				dir = "N";
-			} else {
+			} else if (nextMove[0] == unit.x+BASE_X && nextMove[1] > unit.y+BASE_Y) {
 				dir = "S";
 			}
+			long currentX = (unit.x+BASE_X);
+			long currentY = unit.y+BASE_Y;
+			System.out.println(unit.id + " Heading home, current coords are: " + currentX + ", " + currentY);
+			System.out.println(unit.id + " Heading home, coords I'm going to are: " + nextMove[0] + ", "+nextMove[1]);
 		} else {
 			// See if there's a resource to gather right next to us
 			String resourceDir = checkForResources(BASE_X + unit.x, BASE_Y + unit.y);
