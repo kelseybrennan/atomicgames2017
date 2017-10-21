@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -18,6 +19,10 @@ public class Client {;
 	
 	private final long BASE_X = 29L;
 	private final long BASE_Y = 29L;
+	
+	private long other_base_x = 0L;
+	private long other_base_y = 0L;
+	private boolean other_base_found = false;
 	
 	BufferedReader input;
 	OutputStreamWriter out;
@@ -76,7 +81,7 @@ public class Client {;
 	private void processUpdateFromServer() throws InterruptedException {
 		Map<String, Object> update = updates.take();
 		if (update != null) {
-			//System.out.println("Processing udpate: " + update);
+			System.out.println("Processing udpate: " + update);
 			@SuppressWarnings("unchecked")
 			Collection<JSONObject> unitUpdates = (Collection<JSONObject>) update.get("unit_updates");
 			addUnitUpdate(unitUpdates);
@@ -88,26 +93,48 @@ public class Client {;
 	
 	private void processTileUpdates(Collection<JSONObject> tileUpdates) {
 		for (JSONObject tile : tileUpdates) {
+			// Only process this update if it's visible
 			boolean visible = (Boolean) tile.get("visible");
-			boolean blocked = (Boolean) tile.get("blocked");
-			long x = BASE_X + (Long) tile.get("x");
-			long y = BASE_Y + (Long) tile.get("y");
-			System.out.println(x + ", " + y);
-
-			map[(int) x][(int) y] = new GameTile();
-			map[(int) x][(int) y].setVisible(visible);
-			map[(int) x][(int) y].setBlocked(blocked);
-			JSONObject resources = (JSONObject) tile.get("resources");
-			if (resources != null) {
-				String type = (String) resources.get("type");
-				long total = (Long) resources.get("total");
-				long value = (Long) resources.get("value");
-				TileResource tileResource = new TileResource(type, total, value);
-				map[(int)x][(int)y].setResource(tileResource);
+			if (visible) {
+				boolean blocked = (Boolean) tile.get("blocked");
+				long x = BASE_X + (Long) tile.get("x");
+				long y = BASE_Y + (Long) tile.get("y");
+				
+				// Instantiate tile and set visible and blocked
+				if (map[(int) x][(int) y] == null) {
+					map[(int) x][(int) y] = new GameTile();
+				}
+				map[(int) x][(int) y].setVisible(true);
+				map[(int) x][(int) y].setBlocked(blocked);
+				
+				// Get resource for tile if there is one
+				JSONObject resources = (JSONObject) tile.get("resources");
+				if (resources != null) {
+					String type = (String) resources.get("type");
+					long total = (Long) resources.get("total");
+					long value = (Long) resources.get("value");
+					TileResource tileResource = new TileResource(type, total, value);
+					map[(int)x][(int)y].setResource(tileResource);
+				}
+				
+				// Get units for tile if they exist
+				@SuppressWarnings("unchecked")
+				Collection<JSONObject> unitUpdates = (Collection<JSONObject>) tile.get("units");
+				if (unitUpdates != null) {
+					for (JSONObject unit : unitUpdates) {
+						// Get type
+						String type = (String) unit.get("type");
+						long player = (Long) unit.get("player_id");
+						if (type.equals("base") && player == 1) {
+							other_base_found = true;
+							other_base_x = x;
+							other_base_y = y;
+						}
+					}		
+				}
 			}
 			
 		}
-		
 	}
 	
 
@@ -130,20 +157,78 @@ public class Client {;
 
 	@SuppressWarnings("unchecked")
 	private JSONArray buildCommandList() {
+		JSONArray commands = new JSONArray();
+		
+		// If we have idle units, give them work to do
+		for (Unit unit : units.values()) {
+		    if (unit.type.equals("worker") && unit.status.equals("idle")) {
+		    	commands.add(assignWorkToWorker(unit));
+		    }
+		}		
+		
 		String[] directions = {"N","E","S","W"};
 		String direction = directions[(int) Math.floor(Math.random() * 4)];
-
 		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
 		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
 
-		JSONArray commands = new JSONArray();
-		JSONObject command = new JSONObject();	
+		/*JSONObject command = new JSONObject();	
 		command.put("command", "MOVE");
 		command.put("dir", direction);
 		command.put("unit", unitId);
-		commands.add(command);
+		commands.add(command);*/
+		
 		return commands;
 	}
+	
+	private JSONObject assignWorkToWorker(Unit unit) {
+		JSONObject cmd = new JSONObject();
+		String dir = "";
+		String command = "";
+				
+		// If we have gathered something, send home
+		if (unit.resource > 0) {
+			command = "MOVE";
+			dir = "N"; // TODO: Need to call pathfinding algorithm 
+		} else {
+			// See if there's a resource to gather right next to us
+			String resourceDir = checkForResources(BASE_X + unit.x, BASE_Y + unit.y);
+
+			if (resourceDir != null) {
+				command = "GATHER";
+				dir = resourceDir;
+			}
+		}
+		
+		cmd.put("command", command);
+		cmd.put("dir", dir);
+		cmd.put("unit", unit.id);
+		return cmd;
+	}
+	
+	
+	private String checkForResources(long p_x, long p_y) {
+		int x = (int) p_x;
+		int y = (int) p_y;
+		//HashMap<String, Long> values = new HashMap();
+		//String dir = "";
+		
+		if (map[x][y+1].getResource() != null) {
+			return "N";
+			//values.put("N", map[x][y+1].getResource().value);
+		} else if (map[x][y-1].getResource() != null) {
+			return "S";
+			//values.put("S", map[x][y-1].getResource().value);
+		} else if (map[x+1][y].getResource() != null) {
+			return "E";
+			//values.put("E", map[x+1][y].getResource().value);
+		} else if (map[x-1][y].getResource() != null) {
+			return "W";
+			//values.put("W", map[x-1][y].getResource().value);
+		} else {
+			return null;
+		}
+	}
+	
 
 	@SuppressWarnings("unchecked")
 	private void sendCommandListToServer(JSONArray commands) throws IOException {
