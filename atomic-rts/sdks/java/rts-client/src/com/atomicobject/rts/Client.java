@@ -371,15 +371,17 @@ private JSONObject assignWorkToWorker(Unit unit) {
 				ArrayList<int[]> path = this.aStar(unit, tile[0], tile[1]);
 				if (path == null) {
 					System.out.println("Path is null");
-				}
+				} else {
 				for (int[] move : path ) {
 					System.out.println(move[0] + ", " + move[1]);
+				}
 				}
 				
 				unit.setPath(path);
 				int[] resource = unit.getNextMoveToHome();
 				System.out.println("Next coord: " + resource[0] + ", " + resource[1]);
-				dir = this.getDirectionToMove(resource, unit.x+BASE_X, unit.y+BASE_Y);
+				//dir = this.getDirectionToMove(resource, unit.x+BASE_X, unit.y+BASE_Y);
+				dir = findNextInvisibleCell(unit);
 				System.out.println(dir);
 			} else {
 				//System.out.println("Exploring");
