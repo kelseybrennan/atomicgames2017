@@ -14,15 +14,18 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-public class Client {
+public class Client {;
+	
+	private final int BASE_X = 29;
+	private final int BASE_Y = 29;
 	
 	BufferedReader input;
 	OutputStreamWriter out;
 	LinkedBlockingQueue<Map<String, Object>> updates;
-	/** Added comment */
 	Map<Long, Unit> units;
 	
-	// Comments for testing!!
+	GameTile[][] map = new GameTile[59][59];
+	
 
 	public Client(Socket socket) {
 		updates = new LinkedBlockingQueue<Map<String, Object>>();
@@ -33,6 +36,7 @@ public class Client {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 	}
 	
 	public void start() {
@@ -46,8 +50,10 @@ public class Client {
 		try {
 			while ((nextLine = input.readLine()) != null) {
 				@SuppressWarnings("unchecked")
+				// Get update and add to list of all of them
 				Map<String, Object> update = (Map<String, Object>) JSONValue.parse(nextLine.trim());
 				updates.add(update);
+				
 			}
 		} catch (IOException e) {
 			// exit thread
@@ -70,12 +76,39 @@ public class Client {
 	private void processUpdateFromServer() throws InterruptedException {
 		Map<String, Object> update = updates.take();
 		if (update != null) {
-			System.out.println("Processing udpate: " + update);
+			//System.out.println("Processing udpate: " + update);
 			@SuppressWarnings("unchecked")
 			Collection<JSONObject> unitUpdates = (Collection<JSONObject>) update.get("unit_updates");
 			addUnitUpdate(unitUpdates);
+			@SuppressWarnings("unchecked")
+			Collection<JSONObject> tileUpdates = (Collection<JSONObject>) update.get("tile_updates");
+			processTileUpdates(tileUpdates);
 		}
 	}
+	
+	private void processTileUpdates(Collection<JSONObject> tileUpdates) {
+		for (JSONObject tile : tileUpdates) {
+			boolean visible = (Boolean) tile.get("visible");
+			boolean blocked = (Boolean) tile.get("blocked");
+			int x = BASE_X + ((Integer) tile.get("x"));
+			int y = BASE_Y + (Integer) tile.get("y");
+			System.out.println(x + ", " + y);
+
+			map[x][y].setVisible(visible);
+			map[x][y].setBlocked(blocked);
+			JSONObject resources = (JSONObject) tile.get("resources");
+			if (resources != null) {
+				String type = (String) resources.get("type");
+				int total = (Integer) resources.get("total");
+				int value = (Integer) resources.get("value");
+				TileResource tileResource = new TileResource(type, total, value);
+				map[x][y].setResource(tileResource);
+			}
+			
+		}
+		
+	}
+	
 
 	private void addUnitUpdate(Collection<JSONObject> unitUpdates) {
 		unitUpdates.forEach((unitUpdate) -> {
@@ -115,7 +148,7 @@ public class Client {
 	private void sendCommandListToServer(JSONArray commands) throws IOException {
 		JSONObject container = new JSONObject();
 		container.put("commands", commands);
-		System.out.println("Sending commands: " + container.toJSONString());
+		//System.out.println("Sending commands: " + container.toJSONString());
 		out.write(container.toJSONString());
 		out.write("\n");
 		out.flush();
