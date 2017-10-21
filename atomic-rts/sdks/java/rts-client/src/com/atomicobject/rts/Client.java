@@ -34,6 +34,7 @@ LinkedBlockingQueue<Map<String, Object>> updates;
 Map<Long, Unit> units;
 
 GameTile[][] map = new GameTile[59][59];
+ArrayList<int[]> tilesWithResources = new ArrayList<int[]>();
 
 
 public Client(Socket socket) {
@@ -119,6 +120,15 @@ private void processTileUpdates(Collection<JSONObject> tileUpdates) {
 				long value = (Long) resources.get("value");
 				TileResource tileResource = new TileResource(type, total, value);
 				map[(int)x][(int)y].setResource(tileResource);
+				
+				int[] tmp = {(int)x, (int)y};
+				tilesWithResources.add(tmp);
+			} else {
+				int[] tmp = {(int)x, (int)y};
+				if (tilesWithResources.contains(tmp)) {
+					tilesWithResources.remove(tmp);
+				}
+				map[(int)x][(int)y].setResource(null);
 			}
 
 			// Get units for tile if they exist
@@ -138,6 +148,10 @@ private void processTileUpdates(Collection<JSONObject> tileUpdates) {
 			}
 		}
 
+	}
+	
+	for (int[] tile : tilesWithResources) {
+		System.out.println("Tile with resource at " + tile[0] + ", " + tile[1]);
 	}
 }
 
@@ -268,7 +282,26 @@ private void addUnitUpdate(Collection<JSONObject> unitUpdates) {
 		Long id = (Long) unitUpdate.get("id");
 		String type = (String) unitUpdate.get("type");
 		if (!type.equals("base")) {
-			units.put(id, new Unit(unitUpdate));
+			if (units.get(id) == null) {
+				units.put(id, new Unit(unitUpdate));
+			} else {
+				Unit existing = units.get(id);
+				existing.resource = (Long) unitUpdate.get("resource");
+				existing.attackType = (String) unitUpdate.get("attack_type");
+				existing.health = (Long) unitUpdate.get("health");
+				existing.range = (Long) unitUpdate.get("range");
+				existing.attackDamage = (Long) unitUpdate.get("attack_damage");
+				existing.type = (String) unitUpdate.get("type");
+				existing.speed = (Long) unitUpdate.get("speed");
+				existing.attackCooldown = (Long) unitUpdate.get("attack_cooldown");
+				existing.canAttack = (Boolean) unitUpdate.get("can_attack");
+				existing.playerId = (Long) unitUpdate.get("player_id");
+				existing.x = (Long) unitUpdate.get("x");
+				existing.y = (Long) unitUpdate.get("y");
+				existing.id = (Long) unitUpdate.get("id");
+				existing.status = (String) unitUpdate.get("status");
+				existing.attackCooldownDuration = (Long) unitUpdate.get("attack_cooldown_duration");
+			}
 		}
 	});
 }
@@ -306,29 +339,20 @@ private JSONObject assignWorkToWorker(Unit unit) {
 
 	// If we have gathered something, send home
 	if (unit.resource > 0) {
-		System.out.println("ID = " + unit.id + " Resource = " + unit.resource + " Heading home!");
 		command = "MOVE";
 
 		// Only calculate the path home once, then keep popping off next move
-		if (unit.pathToHome == null) {
-			unit.setPathToHome(this.aStar(unit, (int) BASE_X, (int) BASE_Y));
+		if (unit.path == null) {
+			ArrayList<int[]> path = this.aStar(unit, (int) BASE_X, (int) BASE_Y);
+			unit.setPath(path);
 		}
 		int[] nextMove = unit.getNextMoveToHome();
-
-		// If we got back -1,-1 then we already dropped it off, go back and get more
-		if (nextMove[0] == -1 && nextMove[1] == -1) {
-			// Get the path to our next destination
-			unit.setPathToHome(this.aStar(unit, unit.nextDest[0], unit.nextDest[1]));
-			// Set our next destination to null
-			unit.setNextDest(null);
-			// Get our first move back to resource
-			nextMove = unit.getNextMoveToHome();
-			dir = this.getDirectionToMove(nextMove, unit.x+BASE_X, unit.y+BASE_Y);
+		if (nextMove[0] < 0 || nextMove[1] < 0) {
+			dir = this.findNextInvisibleCell(unit);
+			unit.setPath(null);
 		} else {
-			// Get direction based on coordinates
 			dir = this.getDirectionToMove(nextMove, unit.x+BASE_X, unit.y+BASE_Y);
 		}
-		
 	} else {
 		// See if there's a resource to gather right next to us, and set is as our next destination
 		String resourceDir = checkForResources(BASE_X + unit.x, BASE_Y + unit.y, unit);
@@ -340,10 +364,25 @@ private JSONObject assignWorkToWorker(Unit unit) {
 			System.out.println("ID = " + unit.id + " Gathering from " + dir);
 		} else {
 			command = "MOVE";
-			if (unit.pathToHome != null) {
-				int[] nextMove = unit.getNextMoveToHome();
-				dir = this.getDirectionToMove(nextMove, unit.x+BASE_X, unit.y+BASE_Y);
+			// If we know where a resource is, go to it
+			if (tilesWithResources.size() > 0) {
+				int[] tile = tilesWithResources.get(0);
+				System.out.println("Tile 0: " + tile[0] + " Tile 1: " + tile[1]);
+				ArrayList<int[]> path = this.aStar(unit, tile[0], tile[1]);
+				if (path == null) {
+					System.out.println("Path is null");
+				}
+				for (int[] move : path ) {
+					System.out.println(move[0] + ", " + move[1]);
+				}
+				
+				unit.setPath(path);
+				int[] resource = unit.getNextMoveToHome();
+				System.out.println("Next coord: " + resource[0] + ", " + resource[1]);
+				dir = this.getDirectionToMove(resource, unit.x+BASE_X, unit.y+BASE_Y);
+				System.out.println(dir);
 			} else {
+				//System.out.println("Exploring");
 				dir = findNextInvisibleCell(unit);
 			}
 		}
@@ -380,32 +419,18 @@ private String checkForResources(long p_x, long p_y, Unit unit) {
 	int x = (int) p_x;
 	int y = (int) p_y;
 
-	int[] next = new int[2];
-
 	if (map[x][y+1].getResource() != null) {
-		next[0] = x;
-		next[1] = y+1;
-		unit.setNextDest(next);
+		//unit.setNextDest(x, y+1);
 		return "S";
-		//values.put("N", map[x][y+1].getResource().value);
 	} else if (map[x][y-1].getResource() != null) {
-		next[0] = x;
-		next[1] = y-1;
-		unit.setNextDest(next);
+		//unit.setNextDest(x, y-1);
 		return "N";
-		//values.put("S", map[x][y-1].getResource().value);
 	} else if (map[x+1][y].getResource() != null) {
-		next[0] = x+1;
-		next[1] = y;
-		unit.setNextDest(next);
+		//unit.setNextDest(x+1, y);
 		return "E";
-		//values.put("E", map[x+1][y].getResource().value);
 	} else if (map[x-1][y].getResource() != null) {
-		next[0] = x-1;
-		next[1] = y;
-		unit.setNextDest(next);
+		//unit.setNextDest(x-1, y);
 		return "W";
-		//values.put("W", map[x-1][y].getResource().value);
 	} else {
 		return null;
 	}
@@ -416,7 +441,7 @@ private String checkForResources(long p_x, long p_y, Unit unit) {
 private void sendCommandListToServer(JSONArray commands) throws IOException {
 	JSONObject container = new JSONObject();
 	container.put("commands", commands);
-	System.out.println("Sending commands: " + container.toJSONString());
+	//System.out.println("Sending commands: " + container.toJSONString());
 	out.write(container.toJSONString());
 	out.write("\n");
 	out.flush();
