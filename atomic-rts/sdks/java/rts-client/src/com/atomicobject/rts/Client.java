@@ -165,7 +165,7 @@ public class Client {;
         List<AStarNode> closedList = new ArrayList<AStarNode>();
         
         AStarNode destNode = nodes.get(map[goalX][goalY]);
-        AStarNode current = nodes.get(map[(int) unit.x][(int) unit.y]);
+        AStarNode current = nodes.get(map[(int) unit.x + width][(int) unit.y + height]);
         current.parent = null;
         current.setGValue(0);
         openList.add(current);
