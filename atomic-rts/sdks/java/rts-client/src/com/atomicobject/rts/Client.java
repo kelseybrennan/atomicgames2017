@@ -21,6 +21,8 @@ public class Client {
 	LinkedBlockingQueue<Map<String, Object>> updates;
 	/** Added comment */
 	Map<Long, Unit> units;
+	
+	// Comments for testing!!
 
 	public Client(Socket socket) {
 		updates = new LinkedBlockingQueue<Map<String, Object>>();
