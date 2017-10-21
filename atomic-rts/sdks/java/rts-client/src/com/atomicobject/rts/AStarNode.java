@@ -1,3 +1,5 @@
+package com.atomicobject.rts;
+
 public class AStarNode {
 	public AStarNode parent;
 	public int x;
@@ -17,7 +19,7 @@ public class AStarNode {
 	}
 	
 	public void calculateHValue(AStarNode dest) {
-		Math.abs(this.x - dest.x) + Math.abs(this.y - dest.y);
+		this.hValue = Math.abs(this.x - dest.x) + Math.abs(this.y - dest.y);
 	}
 	
 	public void calculateGValue(AStarNode point) {

@@ -85,7 +85,7 @@ public class Client {;
 	private void processUpdateFromServer() throws InterruptedException {
 		Map<String, Object> update = updates.take();
 		if (update != null) {
-			System.out.println("Processing udpate: " + update);
+			//System.out.println("Processing udpate: " + update);
 			@SuppressWarnings("unchecked")
 			Collection<JSONObject> unitUpdates = (Collection<JSONObject>) update.get("unit_updates");
 			addUnitUpdate(unitUpdates);
@@ -155,7 +155,7 @@ public class Client {;
 		for(int i = 0; i < width; i++) {
 			for(int j = 0; j < height; j++) {
 				nodes.put(map[i][j], new AStarNode(i, j));
-				if(map[i][j].blocked) {
+				if(map[i][j] != null && map[i][j].blocked) {
 					nodes.get(map[i][j]).isWall = true;
 				}
 			}
@@ -313,14 +313,31 @@ public class Client {;
 		// If we have gathered something, send home
 		if (unit.resource > 0) {
 			command = "MOVE";
-			dir = "N"; // TODO: Need to call pathfinding algorithm 
+			if (unit.pathToHome == null) {
+				unit.setPathToHome(this.aStar(unit, (int) BASE_X, (int) BASE_Y));
+			}
+			int[] nextMove = unit.getNextMoveToHome();
+			if (nextMove[0] < unit.x && nextMove[1] == unit.y) {
+				dir = "W";
+			} else if (nextMove[0] > unit.x && nextMove[1] == unit.y) {
+				dir = "E";
+			} else if (nextMove[0] == unit.x && nextMove[1] < unit.y) {
+				dir = "N";
+			} else {
+				dir = "S";
+			}
 		} else {
 			// See if there's a resource to gather right next to us
 			String resourceDir = checkForResources(BASE_X + unit.x, BASE_Y + unit.y);
 
+			// Gather the resource if there's one next to us, otherwise just explore
 			if (resourceDir != null) {
 				command = "GATHER";
 				dir = resourceDir;
+				System.out.println("Gathering from " + dir);
+			} else {
+				command = "MOVE";
+				dir = findNextInvisibleCell(unit);
 			}
 		}
 		
@@ -330,6 +347,12 @@ public class Client {;
 		return cmd;
 	}
 	
+	
+	private String findNextInvisibleCell(Unit unit) {
+		String[] directions = {"N","E","S","W"};
+		String direction = directions[(int) Math.floor(Math.random() * 4)];
+		return direction;
+	}
 	
 	private String checkForResources(long p_x, long p_y) {
 		int x = (int) p_x;

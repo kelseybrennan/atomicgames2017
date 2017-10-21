@@ -1,4 +1,6 @@
 package com.atomicobject.rts;
+import java.util.ArrayList;
+
 import org.json.simple.JSONObject;
 
 public class Unit {
@@ -18,6 +20,7 @@ public class Unit {
 	Long id;
 	String status;
 	Long attackCooldownDuration;
+	ArrayList<int[]> pathToHome;
 
 	public Unit(JSONObject json) {
 		resource = (Long) json.get("resource");
@@ -35,5 +38,13 @@ public class Unit {
 		id = (Long) json.get("id");
 		status = (String) json.get("status");
 		attackCooldownDuration = (Long) json.get("attack_cooldown_duration");
+	}
+	
+	public void setPathToHome(ArrayList<int[]> pathToHome) {
+		this.pathToHome = pathToHome;
+	}
+	
+	public int[] getNextMoveToHome() {
+		return pathToHome.remove(0);
 	}
 }
