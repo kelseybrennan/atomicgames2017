@@ -364,7 +364,7 @@ private JSONObject assignWorkToWorker(Unit unit) {
 			System.out.println("ID = " + unit.id + " Gathering from " + dir);
 		} else {
 			command = "MOVE";
-			// If we know where a resource is, go to it
+			/*// If we know where a resource is, go to it
 			if (tilesWithResources.size() > 0) {
 				int[] tile = tilesWithResources.get(0);
 				System.out.println("Tile 0: " + tile[0] + " Tile 1: " + tile[1]);
@@ -383,10 +383,10 @@ private JSONObject assignWorkToWorker(Unit unit) {
 				//dir = this.getDirectionToMove(resource, unit.x+BASE_X, unit.y+BASE_Y);
 				dir = findNextInvisibleCell(unit);
 				System.out.println(dir);
-			} else {
+			} else {*/
 				//System.out.println("Exploring");
 				dir = findNextInvisibleCell(unit);
-			}
+			//}
 		}
 	}
 
