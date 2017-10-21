@@ -19,6 +19,7 @@ public class Client {
 	BufferedReader input;
 	OutputStreamWriter out;
 	LinkedBlockingQueue<Map<String, Object>> updates;
+	/** Added comment */
 	Map<Long, Unit> units;
 
 	public Client(Socket socket) {
